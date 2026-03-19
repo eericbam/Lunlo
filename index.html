@@ -920,7 +920,8 @@ function rAnnual(){
         let totRow='<tr class="tot"><td>Total Expenses</td>';
         let gt=0;
         mos.forEach((_,mi)=>{
-          const k=mk(curYr,mi);const dg=DATA[k]?.groups||[];
+          const k=mk(curYr,mi);
+          const dg=(mi===curMo&&k===curKey())?getGroups():(DATA[k]?.groups||[]);
           const t=dg.filter(g=>g.key!=='income').reduce((a,g)=>a+grpBud(g),0);
           gt+=t;totRow+=`<td>${t?'$'+Math.round(t).toLocaleString():'—'}</td>`;
         });
@@ -928,7 +929,8 @@ function rAnnual(){
         let netRow='<tr class="net"><td>Net</td>';
         let gn=0;
         mos.forEach((_,mi)=>{
-          const k=mk(curYr,mi);const dg=DATA[k]?.groups||[];
+          const k=mk(curYr,mi);
+          const dg=(mi===curMo&&k===curKey())?getGroups():(DATA[k]?.groups||[]);
           const iT=dg.find(g=>g.key==='income')?grpBud(dg.find(g=>g.key==='income')):0;
           const eT=dg.filter(g=>g.key!=='income').reduce((a,g)=>a+grpBud(g),0);
           const n=iT-eT;gn+=n;
