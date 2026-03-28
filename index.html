@@ -348,7 +348,7 @@ const TEMPLATE=[
          {n:'Spouse Paycheck 2',b:0,a:0},
          {n:'Side Hustle',b:0,a:0},
          {n:'Other Income',b:0,a:0},
-       ]},
+       ]}
     ]
   },
   {
@@ -358,7 +358,7 @@ const TEMPLATE=[
        rows:[
          {n:'Church',b:0,a:0},
          {n:'Charity',b:0,a:0},
-       ]},
+       ]}
     ]
   },
   {
@@ -370,21 +370,18 @@ const TEMPLATE=[
          {n:'Roth IRA',b:0,a:0},
          {n:'Taxable Brokerage',b:0,a:0},
          {n:'Money Market / HYSA',b:0,a:0},
-       ]},
+         {n:'529 Plan',b:0,a:0},
+       ]}
     ]
   },
   {
     key:'savings', label:'Savings',
     secs:[
-      {key:'sav', label:'Savings', hint:'Annual cost ÷ 12 = monthly save for sinking funds',
+      {key:'sav', label:'Savings', hint:'Sinking funds — Annual cost ÷ 12 = monthly save',
        rows:[
-         {n:'Gifts',b:0,a:0},
-         {n:'Car Maintenance',b:0,a:0},
-         {n:'Medical',b:0,a:0},
-         {n:'Education',b:0,a:0},
-         {n:'Annual Subscriptions',b:0,a:0},
-         {n:'Vacation',b:0,a:0},
-       ]},
+         {n:'Car Maintenance Sinking Fund',b:0,a:0},
+         {n:'Vacation Sinking Fund',b:0,a:0},
+       ]}
     ]
   },
   {
@@ -397,7 +394,7 @@ const TEMPLATE=[
          {n:'Home / Renters Insurance',b:0,a:0},
          {n:'Internet',b:0,a:0},
          {n:'Property Tax / HOA',b:0,a:0},
-       ]},
+       ]}
     ]
   },
   {
@@ -408,8 +405,8 @@ const TEMPLATE=[
          {n:'Car Payment',b:0,a:0},
          {n:'Fuel',b:0,a:0},
          {n:'Car Insurance',b:0,a:0},
-         {n:'Transport Misc (parking, tolls, transit)',b:0,a:0},
-       ]},
+         {n:'Transport Miscellaneous (parking, tolls, transit)',b:0,a:0},
+       ]}
     ]
   },
   {
@@ -419,7 +416,7 @@ const TEMPLATE=[
        rows:[
          {n:'Groceries',b:0,a:0},
          {n:'Dining Out',b:0,a:0},
-       ]},
+       ]}
     ]
   },
   {
@@ -428,8 +425,8 @@ const TEMPLATE=[
       {key:'pers', label:'Personal', hint:'',
        rows:[
          {n:'Personal Care (toiletries, grooming, haircuts)',b:0,a:0},
-         {n:'Clothing',b:0,a:0},
-       ]},
+         {n:'Shopping',b:0,a:0},
+       ]}
     ]
   },
   {
@@ -441,30 +438,29 @@ const TEMPLATE=[
          {n:'Hobbies',b:0,a:0},
          {n:'Entertainment',b:0,a:0},
          {n:'Mobile',b:0,a:0},
-       ]},
+       ]}
     ]
   },
   {
     key:'health', label:'Health & Insurance',
     secs:[
-      {key:'hlth', label:'Health & Insurance', hint:'Insurance premiums + routine medical',
+      {key:'hlth', label:'Health & Insurance', hint:'',
        rows:[
          {n:'Health Insurance',b:0,a:0},
          {n:'Life Insurance',b:0,a:0},
-         {n:'Disability Insurance',b:0,a:0},
          {n:'Routine Medical (checkups, prescriptions)',b:0,a:0},
-       ]},
+       ]}
     ]
   },
   {
     key:'debt', label:'Debt',
     secs:[
-      {key:'debt', label:'Fixed Obligations', hint:'',
+      {key:'debt', label:'Debt', hint:'',
        rows:[
          {n:'Credit Cards',b:0,a:0},
          {n:'Student Loans',b:0,a:0},
          {n:'Other Debt Payments',b:0,a:0},
-       ]},
+       ]}
     ]
   },
 ];
@@ -808,139 +804,208 @@ function rAnnual(){
   const mos=MO.map(m=>m.slice(0,3));
   const groups=getGroups();
 
-  // Build month-by-month data arrays
+  // Build full-year data arrays (current month uses live getGroups())
   const annInc=Array.from({length:12},(_,mi)=>{
     const k=mk(curYr,mi);
-    // If this is the current month, use live getGroups() data
-    if(mi===curMo && mk(curYr,mi)===curKey()){
-      const ig=getGroups().find(g=>g.key==='income');return ig?grpBud(ig):0;
-    }
-    const dg=DATA[k]?.groups||[];
-    const ig=dg.find(g=>g.key==='income');return ig?grpBud(ig):0;
+    if(mi===curMo&&k===curKey()){const ig=getGroups().find(g=>g.key==='income');return ig?grpBud(ig):0;}
+    const dg=DATA[k]?.groups||[];const ig=dg.find(g=>g.key==='income');return ig?grpBud(ig):0;
   });
   const annExp=Array.from({length:12},(_,mi)=>{
     const k=mk(curYr,mi);
-    if(mi===curMo && mk(curYr,mi)===curKey()){
-      return getGroups().filter(g=>g.key!=='income').reduce((a,g)=>a+grpBud(g),0);
-    }
-    const dg=DATA[k]?.groups||[];
-    return dg.filter(g=>g.key!=='income').reduce((a,g)=>a+grpBud(g),0);
+    if(mi===curMo&&k===curKey()) return getGroups().filter(g=>g.key!=='income').reduce((a,g)=>a+grpBud(g),0);
+    const dg=DATA[k]?.groups||[];return dg.filter(g=>g.key!=='income').reduce((a,g)=>a+grpBud(g),0);
   });
   const annNet=annInc.map((v,i)=>v-annExp[i]);
   const hasAnn=annInc.some(v=>v>0)||annExp.some(v=>v>0);
 
-  // Group totals for the year
+  // Year totals
+  const yrInc=annInc.reduce((a,v)=>a+v,0);
+  const yrExp=annExp.reduce((a,v)=>a+v,0);
+  const yrNet=yrInc-yrExp;
+
+  // Per-group year totals for donut + breakdown
   const grpTotals=groups.filter(g=>g.key!=='income').map(g=>{
     const tot=Array.from({length:12},(_,mi)=>{
       const k=mk(curYr,mi);
-      const srcG=(mi===curMo && k===curKey())?getGroups():(DATA[k]?.groups||[]);
+      const srcG=(mi===curMo&&k===curKey())?getGroups():(DATA[k]?.groups||[]);
       const mg=srcG.find(x=>x.key===g.key);return mg?grpBud(mg):0;
     }).reduce((a,v)=>a+v,0);
     return {label:g.label,tot};
   }).filter(g=>g.tot>0).sort((a,b)=>b.tot-a.tot);
-
   const totalYrExp=grpTotals.reduce((a,g)=>a+g.tot,0);
 
+  // Monthly net streak — count positive months
+  const posMonths=annNet.filter((v,i)=>(annInc[i]||annExp[i])&&v>=0).length;
+  const activeMonths=annNet.filter((_,i)=>annInc[i]||annExp[i]).length;
+
   document.getElementById('annC').innerHTML=`
-    ${hasAnn?`
-    <div style="padding:0 16px 0">
-
-      <!-- Grouped bar chart -->
-      <div class="card" style="padding:18px 18px 10px;margin-bottom:12px">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-          <div class="card-lbl" style="margin:0">${curYr} — Monthly Overview</div>
-          <div style="display:flex;gap:10px">
-            <div style="display:flex;align-items:center;gap:4px"><div style="width:8px;height:8px;border-radius:2px;background:rgba(240,240,240,.45)"></div><span style="font-size:9px;color:var(--t3)">Income</span></div>
-            <div style="display:flex;align-items:center;gap:4px"><div style="width:8px;height:8px;border-radius:2px;background:rgba(240,240,240,.18)"></div><span style="font-size:9px;color:var(--t3)">Expenses</span></div>
-          </div>
-        </div>
-        <canvas id="annBars" style="width:100%;height:110px;display:block"></canvas>
+    <!-- Year selector row -->
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px 10px">
+      <div style="font-family:'DM Serif Display',serif;font-size:22px;color:var(--t1)">${curYr}</div>
+      <div style="display:flex;gap:8px">
+        <button onclick="chAnnYr(-1)" style="background:var(--s2);border:1px solid var(--b1);border-radius:20px;color:var(--t2);font-size:12px;padding:5px 12px;cursor:pointer">‹ ${curYr-1}</button>
+        <button onclick="chAnnYr(1)"  style="background:var(--s2);border:1px solid var(--b1);border-radius:20px;color:var(--t2);font-size:12px;padding:5px 12px;cursor:pointer">${curYr+1} ›</button>
       </div>
-
-      <!-- Net trend line -->
-      <div class="card" style="padding:18px 18px 10px;margin-bottom:12px">
-        <div class="card-lbl" style="margin-bottom:10px">${curYr} — Net (Monthly)</div>
-        <canvas id="annLine" style="width:100%;height:80px;display:block"></canvas>
-        <div style="display:flex;justify-content:space-between;margin-top:6px">
-          ${mos.map(m=>`<span style="font-size:8px;color:var(--t3)">${m}</span>`).join('')}
-        </div>
-      </div>
-
-      <!-- Annual donut -->
-      ${grpTotals.length?`
-      <div class="card" style="padding:18px;margin-bottom:12px">
-        <div class="card-lbl" style="margin-bottom:14px">${curYr} — Annual Spending</div>
-        <div style="display:flex;align-items:center;gap:16px">
-          <div style="position:relative;flex-shrink:0;width:110px;height:110px">
-            <canvas id="annDnut" style="width:110px;height:110px;display:block"></canvas>
-            <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none">
-              <div style="font-family:'DM Serif Display',serif;font-size:15px;color:var(--t1)">$${Math.round(totalYrExp/1000)}k</div>
-              <div style="font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:.5px">annual</div>
-            </div>
-          </div>
-          <div style="flex:1;display:flex;flex-direction:column;gap:7px;min-width:0">
-            ${grpTotals.slice(0,7).map((g,i)=>`<div style="display:flex;align-items:center;gap:7px">
-              <div style="width:7px;height:7px;border-radius:50%;flex-shrink:0;background:${CP[i%CP.length]}"></div>
-              <div style="flex:1;font-size:11px;color:var(--t2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${g.label}</div>
-              <div style="font-size:11px;font-weight:500;color:var(--t1)">$${Math.round(g.tot).toLocaleString()}</div>
-            </div>`).join('')}
-          </div>
-        </div>
-      </div>`:''}
-
-      <!-- Summary row -->
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:12px">
-        <div class="sc2"><div class="sc2-e">Total Income</div><div class="sc2-v">${'$'+Math.round(annInc.reduce((a,v)=>a+v,0)/1000)+'k'}</div></div>
-        <div class="sc2"><div class="sc2-e">Total Expenses</div><div class="sc2-v ${totalYrExp>annInc.reduce((a,v)=>a+v,0)?'neg':''}">${'$'+Math.round(totalYrExp/1000)+'k'}</div></div>
-        <div class="sc2"><div class="sc2-e">Net</div><div class="sc2-v ${annNet.reduce((a,v)=>a+v,0)>=0?'pos':'neg'}">${'$'+Math.round(Math.abs(annNet.reduce((a,v)=>a+v,0))/1000)+'k'}</div></div>
-      </div>
-    </div>`:`<div class="empty" style="margin-top:40px">◎<br><br>Add budget amounts to see the annual view</div>`}
-
-    <!-- Table -->
-    <div style="overflow-x:auto;padding:0 16px 16px;scrollbar-width:thin;scrollbar-color:var(--b1) transparent">
-      <table class="ann-tbl"><thead><tr><th>Category</th>${mos.map(m=>`<th>${m}</th>`).join('')}<th>Total</th></tr></thead><tbody>
-      ${(()=>{
-        let rows='';
-        groups.forEach(grp=>{
-          rows+=`<tr class="grp"><td colspan="14">${grp.label}</td></tr>`;
-          grp.secs.forEach(sec=>{
-            rows+=`<tr class="sub"><td>${sec.label}</td>`;
-            let yr=0;
-            mos.forEach((_,mi)=>{
-              const k=mk(curYr,mi);
-              const srcG=(mi===curMo && k===curKey())?getGroups():(DATA[k]?.groups||[]);
-              const dg=srcG.find(g=>g.key===grp.key);
-              const ds=dg?.secs?.find(s=>s.key===sec.key);
-              const v=ds?secBud(ds):0;yr+=v;
-              rows+=`<td>${v?'$'+Math.round(v).toLocaleString():'—'}</td>`;
-            });
-            rows+=`<td>${yr?'$'+Math.round(yr).toLocaleString():'—'}</td></tr>`;
-          });
-        });
-        let totRow='<tr class="tot"><td>Total Expenses</td>';
-        let gt=0;
-        mos.forEach((_,mi)=>{
-          const k=mk(curYr,mi);
-          const dg=(mi===curMo&&k===curKey())?getGroups():(DATA[k]?.groups||[]);
-          const t=dg.filter(g=>g.key!=='income').reduce((a,g)=>a+grpBud(g),0);
-          gt+=t;totRow+=`<td>${t?'$'+Math.round(t).toLocaleString():'—'}</td>`;
-        });
-        totRow+=`<td>${gt?'$'+Math.round(gt).toLocaleString():'—'}</td></tr>`;
-        let netRow='<tr class="net"><td>Net</td>';
-        let gn=0;
-        mos.forEach((_,mi)=>{
-          const k=mk(curYr,mi);
-          const dg=(mi===curMo&&k===curKey())?getGroups():(DATA[k]?.groups||[]);
-          const iT=dg.find(g=>g.key==='income')?grpBud(dg.find(g=>g.key==='income')):0;
-          const eT=dg.filter(g=>g.key!=='income').reduce((a,g)=>a+grpBud(g),0);
-          const n=iT-eT;gn+=n;
-          netRow+=`<td style="${n<0?'color:var(--red)':n>0?'color:var(--green)':''}">${(iT||eT)?'$'+Math.round(n).toLocaleString():'—'}</td>`;
-        });
-        netRow+=`<td style="${gn<0?'color:var(--red)':gn>0?'color:var(--green)':''}">${gn?'$'+Math.round(gn).toLocaleString():'—'}</td></tr>`;
-        return rows+totRow+netRow;
-      })()}
-      </tbody></table>
     </div>
+
+    ${!hasAnn?`<div class="empty" style="margin-top:30px">◎<br><br>No data for ${curYr}.<br>Enter budget amounts to see the annual view.</div>`:`
+
+    <!-- KPI strip -->
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:0 16px 14px">
+      <div class="sc2">
+        <div class="sc2-e">Total Income</div>
+        <div class="sc2-v">${yrInc>=1000?'$'+(yrInc/1000).toFixed(1)+'k':'$'+Math.round(yrInc).toLocaleString()}</div>
+        <div class="sc2-s">${curYr}</div>
+      </div>
+      <div class="sc2">
+        <div class="sc2-e">Total Expenses</div>
+        <div class="sc2-v ${yrExp>yrInc?'neg':''}">${yrExp>=1000?'$'+(yrExp/1000).toFixed(1)+'k':'$'+Math.round(yrExp).toLocaleString()}</div>
+        <div class="sc2-s">${curYr}</div>
+      </div>
+      <div class="sc2">
+        <div class="sc2-e">Net</div>
+        <div class="sc2-v ${yrNet>=0?'pos':'neg'}">${Math.abs(yrNet)>=1000?'$'+(Math.abs(yrNet)/1000).toFixed(1)+'k':'$'+Math.round(Math.abs(yrNet)).toLocaleString()}</div>
+        <div class="sc2-s">${yrNet>=0?'surplus':'deficit'}</div>
+      </div>
+    </div>
+
+    <!-- Monthly bar chart -->
+    <div class="card" style="margin:0 16px 12px;padding:16px 16px 10px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <div class="card-lbl" style="margin:0">Monthly Overview</div>
+        <div style="display:flex;gap:10px">
+          <div style="display:flex;align-items:center;gap:4px"><div style="width:8px;height:8px;border-radius:2px;background:rgba(240,240,240,.45)"></div><span style="font-size:9px;color:var(--t3)">Income</span></div>
+          <div style="display:flex;align-items:center;gap:4px"><div style="width:8px;height:8px;border-radius:2px;background:rgba(240,240,240,.2)"></div><span style="font-size:9px;color:var(--t3)">Expenses</span></div>
+        </div>
+      </div>
+      <canvas id="annBars" style="width:100%;height:120px;display:block"></canvas>
+      <!-- Month labels -->
+      <div style="display:grid;grid-template-columns:repeat(12,1fr);margin-top:6px">
+        ${mos.map((m,i)=>`<div style="text-align:center;font-size:8px;color:${i===curMo?'var(--t1)':'var(--t3)'};font-weight:${i===curMo?'600':'400'}">${m}</div>`).join('')}
+      </div>
+    </div>
+
+    <!-- Net trend line -->
+    <div class="card" style="margin:0 16px 12px;padding:16px 16px 8px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <div class="card-lbl" style="margin:0">Monthly Net</div>
+        ${activeMonths>0?`<div style="font-size:10px;color:var(--t3)">${posMonths}/${activeMonths} months positive</div>`:''}
+      </div>
+      <canvas id="annLine" style="width:100%;height:72px;display:block"></canvas>
+      <!-- Month value labels -->
+      <div style="display:grid;grid-template-columns:repeat(12,1fr);margin-top:6px">
+        ${annNet.map((v,i)=>{
+          const hasData=annInc[i]||annExp[i];
+          return `<div style="text-align:center;font-size:7px;color:${!hasData?'transparent':v>=0?'var(--green)':'var(--red)'}">${hasData?(Math.abs(v)>=1000?'$'+(Math.abs(v)/1000).toFixed(0)+'k':v>=0?'+$'+Math.round(v):'-$'+Math.abs(Math.round(v))):'—'}</div>`;
+        }).join('')}
+      </div>
+    </div>
+
+    <!-- Spending donut + breakdown side by side -->
+    ${grpTotals.length?`
+    <div class="card" style="margin:0 16px 12px;padding:16px">
+      <div class="card-lbl" style="margin-bottom:14px">Annual Spending by Category</div>
+      <div style="display:flex;align-items:center;gap:16px">
+        <div style="position:relative;flex-shrink:0;width:110px;height:110px">
+          <canvas id="annDnut" style="width:110px;height:110px;display:block"></canvas>
+          <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none">
+            <div style="font-family:'DM Serif Display',serif;font-size:15px;color:var(--t1)">${totalYrExp>=1000?'$'+(totalYrExp/1000).toFixed(1)+'k':'$'+Math.round(totalYrExp)}</div>
+            <div style="font-size:8px;color:var(--t3);text-transform:uppercase;letter-spacing:.5px">spent</div>
+          </div>
+        </div>
+        <div style="flex:1;display:flex;flex-direction:column;gap:6px;min-width:0">
+          ${grpTotals.slice(0,8).map((g,i)=>`
+          <div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:3px">
+              <div style="display:flex;align-items:center;gap:6px;min-width:0">
+                <div style="width:6px;height:6px;border-radius:50%;flex-shrink:0;background:${CP[i%CP.length]}"></div>
+                <span style="font-size:10px;color:var(--t2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${g.label}</span>
+              </div>
+              <span style="font-size:10px;font-weight:500;color:var(--t1);flex-shrink:0;margin-left:4px">${g.tot>=1000?'$'+(g.tot/1000).toFixed(1)+'k':'$'+Math.round(g.tot).toLocaleString()}</span>
+            </div>
+            <div style="height:3px;background:var(--b1);border-radius:2px;overflow:hidden">
+              <div style="height:100%;border-radius:2px;background:${CP[i%CP.length]};width:${totalYrExp>0?Math.round(g.tot/totalYrExp*100):0}%;transition:width .5s"></div>
+            </div>
+          </div>`).join('')}
+        </div>
+      </div>
+    </div>`:''}
+
+    <!-- Monthly detail table -->
+    <div style="padding:0 16px 6px">
+      <div class="card-lbl" style="padding:8px 2px 6px">Monthly Detail</div>
+    </div>
+    <div style="overflow-x:auto;padding:0 16px 20px;scrollbar-width:thin;scrollbar-color:var(--b1) transparent">
+      <table class="ann-tbl">
+        <thead>
+          <tr>
+            <th>Category</th>
+            ${mos.map((m,i)=>`<th style="${i===curMo?'color:var(--t1)':''}">  ${m}</th>`).join('')}
+            <th>Total</th>
+          </tr>
+        </thead>
+        <tbody>
+        ${(()=>{
+          let rows='';
+          groups.forEach(grp=>{
+            rows+=`<tr class="grp"><td colspan="14">${grp.label}</td></tr>`;
+            grp.secs.forEach(sec=>{
+              rows+=`<tr class="sub"><td>${sec.label}</td>`;
+              let yr=0;
+              mos.forEach((_,mi)=>{
+                const k=mk(curYr,mi);
+                const srcG=(mi===curMo&&k===curKey())?getGroups():(DATA[k]?.groups||[]);
+                const dg=srcG.find(g=>g.key===grp.key);
+                const ds=dg?.secs?.find(s=>s.key===sec.key);
+                const v=ds?secBud(ds):0;yr+=v;
+                rows+=`<td style="${mi===curMo?'color:var(--t1)':''}">${v?'$'+Math.round(v).toLocaleString():'—'}</td>`;
+              });
+              rows+=`<td style="font-weight:600">${yr?'$'+Math.round(yr).toLocaleString():'—'}</td></tr>`;
+            });
+          });
+
+          // Total Expenses
+          rows+='<tr class="tot"><td>Total Expenses</td>';
+          let gt=0;
+          mos.forEach((_,mi)=>{
+            const k=mk(curYr,mi);
+            const dg=(mi===curMo&&k===curKey())?getGroups():(DATA[k]?.groups||[]);
+            const t=dg.filter(g=>g.key!=='income').reduce((a,g)=>a+grpBud(g),0);
+            gt+=t;rows+=`<td style="${mi===curMo?'color:var(--t1)':''}">${t?'$'+Math.round(t).toLocaleString():'—'}</td>`;
+          });
+          rows+=`<td>${gt?'$'+Math.round(gt).toLocaleString():'—'}</td></tr>`;
+
+          // Total Income
+          rows+='<tr class="tot"><td>Total Income</td>';
+          let gi=0;
+          mos.forEach((_,mi)=>{
+            const k=mk(curYr,mi);
+            const dg=(mi===curMo&&k===curKey())?getGroups():(DATA[k]?.groups||[]);
+            const iT=dg.find(g=>g.key==='income');
+            const v=iT?grpBud(iT):0;
+            gi+=v;rows+=`<td style="${mi===curMo?'color:var(--t1)':''}">${v?'$'+Math.round(v).toLocaleString():'—'}</td>`;
+          });
+          rows+=`<td>${gi?'$'+Math.round(gi).toLocaleString():'—'}</td></tr>`;
+
+          // Net
+          rows+='<tr class="net"><td>Net</td>';
+          let gn=0;
+          mos.forEach((_,mi)=>{
+            const k=mk(curYr,mi);
+            const dg=(mi===curMo&&k===curKey())?getGroups():(DATA[k]?.groups||[]);
+            const iT=dg.find(g=>g.key==='income')?grpBud(dg.find(g=>g.key==='income')):0;
+            const eT=dg.filter(g=>g.key!=='income').reduce((a,g)=>a+grpBud(g),0);
+            const n=iT-eT;gn+=n;
+            rows+=`<td style="color:${(iT||eT)?(n>=0?'var(--green)':'var(--red)'):'inherit'}">${(iT||eT)?'$'+Math.round(n).toLocaleString():'—'}</td>`;
+          });
+          rows+=`<td style="color:${gn>=0?'var(--green)':'var(--red)'}">${gn?'$'+Math.round(gn).toLocaleString():'—'}</td></tr>`;
+
+          return rows;
+        })()}
+        </tbody>
+      </table>
+    </div>
+    `}
   `;
 
   requestAnimationFrame(()=>{
@@ -950,6 +1015,13 @@ function rAnnual(){
       if(grpTotals.length) drawDonut('annDnut',grpTotals.map(g=>g.tot));
     }
   });
+}
+
+// Year navigation for annual view
+function chAnnYr(dir){
+  curYr+=dir;
+  updLabel();
+  rAnnual();
 }
 
 // ── GUIDE ─────────────────────────────────────────────────────────────────────
