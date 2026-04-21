@@ -236,12 +236,12 @@ body{background:var(--bg);color:var(--t1);font-family:'Plus Jakarta Sans',sans-s
 .grp-stat-val.neg{color:var(--red)}
 
 /* Column heads */
-.col-row{display:grid;grid-template-columns:1fr 92px 92px;gap:8px;padding:8px 18px;background:var(--s2);border-bottom:1px solid var(--line2)}
+.col-row{display:grid;grid-template-columns:1fr 88px 88px;gap:8px;padding:8px 18px;background:var(--s2);border-bottom:1px solid var(--line2)}
 .ch{font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--t4);text-align:right}
 .ch:first-child{text-align:left}
 
 /* Budget row */
-.bv-row{display:grid;grid-template-columns:1fr 92px 92px;gap:8px;padding:12px 18px;border-bottom:1px solid var(--line2);align-items:center}
+.bv-row{display:grid;grid-template-columns:1fr 88px 88px;gap:8px;padding:12px 18px;border-bottom:1px solid var(--line2);align-items:center}
 .bv-row:hover{background:var(--s2)}
 .bv-row:last-of-type{border-bottom:none}
 .row-left{position:relative}
@@ -271,7 +271,7 @@ body{background:var(--bg);color:var(--t1);font-family:'Plus Jakarta Sans',sans-s
 .del-btn:hover{opacity:1!important}
 
 /* Remain tag */
-.remain-row{display:flex;justify-content:flex-end;padding:0 18px 10px}
+.remain-row{display:none}
 .remain-tag{font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px}
 .remain-tag.pos{color:var(--green);background:var(--green-bg)}
 .remain-tag.neg{color:var(--red);background:var(--red-bg)}
@@ -429,6 +429,22 @@ body{background:var(--bg);color:var(--t1);font-family:'Plus Jakarta Sans',sans-s
 .ann-tbl tr.sub-row td:first-child{padding-left:16px;color:var(--t2);font-weight:500;font-size:12px}
 .ann-tbl tr.tot-row td{font-family:'DM Serif Display',serif;font-size:14px;border-top:2px solid var(--line);background:var(--s2);color:var(--t1)}
 .ann-tbl tr.net-row td{font-family:'DM Serif Display',serif;font-size:15px;background:var(--t1);color:#fff;border-top:2px solid var(--line)}
+
+
+/* ── ROW VISUAL PROGRESS ── */
+.row-prog-wrap{margin-top:6px}
+.row-prog-bar{height:5px;background:var(--s3);border-radius:3px;overflow:hidden}
+.row-prog-fill{height:100%;border-radius:3px;transition:width .5s cubic-bezier(.4,0,.2,1)}
+.row-prog-fill.good{background:var(--green-dot)}
+.row-prog-fill.warn{background:var(--amber-dot)}
+.row-prog-fill.over{background:var(--red-dot)}
+.row-prog-meta{display:flex;justify-content:space-between;margin-top:4px}
+.row-prog-pct{font-size:10px;font-weight:700;color:var(--t4)}
+.row-status-badge{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;white-space:nowrap}
+.row-status-badge.on-track{color:var(--green);background:var(--green-bg)}
+.row-status-badge.caution{color:var(--amber);background:var(--amber-bg)}
+.row-status-badge.over-budget{color:var(--red);background:var(--red-bg)}
+.row-status-badge.empty{color:var(--t4);background:var(--s2)}
 
 /* Toast */
 .toast{position:fixed;bottom:88px;left:50%;transform:translateX(-50%) translateY(10px);background:var(--t1);color:#fff;font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;padding:10px 20px;border-radius:20px;opacity:0;transition:all .22s;z-index:999;white-space:nowrap;pointer-events:none;box-shadow:var(--sh3)}
@@ -816,11 +832,30 @@ function rBudget(){
         const rR=row.b-row.a,rP=row.b>0?Math.min(100,Math.round(row.a/row.b*100)):0;
         const fc=rP>=100?'over':rP>=80?'warn':'good';
         const el=document.createElement('div');
+        // Status badge logic
+        let badge='',badgeCls='empty';
+        if(row.b>0||row.a>0){
+          if(row.b===0&&row.a>0){badge='No budget set';badgeCls='caution';}
+          else if(rP>=100){badge='Over budget';badgeCls='over-budget';}
+          else if(rP>=80){badge='Caution';badgeCls='caution';}
+          else if(rP>0){badge=rP+'% used';badgeCls='on-track';}
+          else{badge='Not started';badgeCls='empty';}
+        }
+
         el.innerHTML=`
           <div class="bv-row">
             <div class="row-left">
               <div class="row-name">${row.n}<button class="del-btn" onclick="delRow('${sec.key}',${ri})">&#x2715;</button></div>
-              ${row.b>0||row.a>0?`<div class="row-prog"><div class="row-prog-fill ${fc}" style="width:${rP}%"></div></div>`:''}
+              ${row.b>0||row.a>0?`
+              <div class="row-prog-wrap">
+                <div class="row-prog-bar"><div class="row-prog-fill ${fc}" style="width:${Math.min(rP,100)}%"></div></div>
+                <div class="row-prog-meta">
+                  <span class="row-status-badge ${badgeCls}">${badge}</span>
+                  ${rR!==0&&row.b>0?`<span style="font-size:10px;font-weight:700;color:${rR>0?'var(--green)':'var(--red)'}">
+                    ${rR>0?'+':'-'}$${Math.abs(Math.round(rR)).toLocaleString()} ${rR>0?'left':'over'}
+                  </span>`:''}
+                </div>
+              </div>`:''}
             </div>
             <div class="inp-wrap"><span class="inp-sym">$</span>
               <input class="num-inp" type="number" min="0" step="1" placeholder="0" value="${row.b||''}" oninput="upd('${sec.key}',${ri},'b',this.value)">
@@ -829,11 +864,6 @@ function rBudget(){
               <input class="num-inp" type="number" min="0" step="1" placeholder="0" value="${row.a||''}" oninput="upd('${sec.key}',${ri},'a',this.value)">
             </div>
           </div>
-          ${row.b>0||row.a>0?`<div class="remain-row">
-            <span class="remain-tag ${rR>0?'pos':rR<0?'neg':'zero'}">
-              ${rR>0?'+':rR<0?'-':''}$${Math.abs(Math.round(rR)).toLocaleString()} ${rR>0?'left':rR<0?'over':'zeroed'}
-            </span>
-          </div>`:''}
         `;
         gc.appendChild(el);
       });
